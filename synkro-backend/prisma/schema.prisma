@@ -1,0 +1,98 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model evenements {
+  id                      Int                   @id @default(autoincrement())
+  titre                   String                @db.VarChar(100)
+  description             String?               @db.Text
+  lieu                    String?               @db.VarChar(255)
+  date_debut              DateTime              @db.DateTime(0)
+  date_fin                DateTime              @db.DateTime(0)
+  max_participants        Int?
+  date_limite_inscription DateTime?             @db.DateTime(0)
+  est_prive               Boolean?              @default(false)
+  code_partage            String?               @unique(map: "code_partage") @db.VarChar(20)
+  proprietaire_id         Int
+  date_creation           DateTime              @default(now()) @db.Timestamp(0)
+  est_annule              Boolean?              @default(false)
+  categorie               evenements_categorie? @default(Social)
+  utilisateurs            utilisateurs          @relation(fields: [proprietaire_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "evenements_ibfk_1")
+  inscriptions            inscriptions[]
+  invitations             invitations[]
+  statistiques            statistiques?
+
+  @@index([proprietaire_id], map: "proprietaire_id")
+}
+
+model inscriptions {
+  id               Int                  @id @default(autoincrement())
+  evenement_id     Int
+  utilisateur_id   Int
+  date_inscription DateTime             @default(now()) @db.Timestamp(0)
+  statut           inscriptions_statut? @default(en_attente)
+  evenements       evenements           @relation(fields: [evenement_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "inscriptions_ibfk_1")
+  utilisateurs     utilisateurs         @relation(fields: [utilisateur_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "inscriptions_ibfk_2")
+
+  @@unique([evenement_id, utilisateur_id], map: "inscription_unique")
+  @@index([utilisateur_id], map: "utilisateur_id")
+}
+
+model invitations {
+  id              Int                 @id @default(autoincrement())
+  evenement_id    Int
+  email_invite    String              @db.VarChar(100)
+  code_invitation String              @unique(map: "code_invitation") @db.VarChar(50)
+  date_envoi      DateTime            @default(now()) @db.Timestamp(0)
+  statut          invitations_statut? @default(en_attente)
+  evenements      evenements          @relation(fields: [evenement_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "invitations_ibfk_1")
+
+  @@index([evenement_id], map: "evenement_id")
+}
+
+model statistiques {
+  evenement_id         Int        @id
+  total_vues           Int?       @default(0)
+  total_inscriptions   Int?       @default(0)
+  total_presents       Int?       @default(0)
+  derniere_mise_a_jour DateTime   @default(now()) @db.Timestamp(0)
+  evenements           evenements @relation(fields: [evenement_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "statistiques_ibfk_1")
+}
+
+model utilisateurs {
+  id            Int            @id @default(autoincrement())
+  email         String         @unique(map: "email") @db.VarChar(100)
+  mot_de_passe  String         @db.VarChar(255)
+  nom           String?        @db.VarChar(50)
+  prenom        String?        @db.VarChar(50)
+  date_creation DateTime       @default(now()) @db.Timestamp(0)
+  evenements    evenements[]
+  inscriptions  inscriptions[]
+}
+
+enum inscriptions_statut {
+  en_attente
+  confirmee
+  annulee
+  present
+}
+
+enum invitations_statut {
+  en_attente
+  acceptee
+  refusee
+}
+
+enum evenements_categorie {
+  Conf_rence @map("Conf?rence")
+  Formation
+  Social
+  Sport
+  Virtuel
+  F_te       @map("F?te")
+}
