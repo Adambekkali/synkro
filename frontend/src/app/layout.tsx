@@ -4,7 +4,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <body className="bg-gray-100 text-gray-900">
         {/* HEADER */}
         <header className="bg-blue-600 text-white p-4 flex justify-between items-center">
-          <h1 className="text-xl font-bold">Mon Site Next.js</h1>
+          <h1 className="text-xl blue font-bold">Synkro</h1>
           <nav>
             <a href="/" className="mr-4">Accueil</a>
             <a href="/about">À propos</a>
