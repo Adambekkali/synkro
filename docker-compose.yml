@@ -13,7 +13,31 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: synkro_frontend
+    restart: always
+    ports:
+      - "3001:3001"
+    depends_on:
+      - mysql
+    command: npm run dev
+  backend:
+    build:
+      context: ./synkro-backend
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ENV=docker
+      - DATABASE_URL=mysql://root:root@mysql:3306/gestion_evenements
+    container_name: synkro_backend
+    restart: always
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mysql
+    command: npm run dev
 volumes:
   mysql_data:
     driver: local
