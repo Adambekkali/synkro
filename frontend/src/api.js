@@ -15,7 +15,7 @@ export async function getUsers() {
 
 export async function getUserById(userId) {
   try {
-    const response = await fetch(`${API_URL}/users/${userId}`);
+    const response = await fetch(`${API_URL}/utilisateurs/${userId}`);
     if (!response.ok) {
       throw new Error(`Erreur lors de la récupération de l'utilisateur avec ID ${userId}`);
     }
@@ -27,7 +27,7 @@ export async function getUserById(userId) {
 }
 export async function createUser(user) {
   try {
-    const response = await fetch(`${API_URL}/users`, {
+    const response = await fetch(`${API_URL}/utilisateurs`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
