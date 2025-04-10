@@ -15,6 +15,13 @@ export class UtilisateursService {
     });
   }
 
+  async findByUsername(email: string) {
+    return this.prisma.utilisateurs.findUnique({
+      where: { email },
+    });
+  }
+  
+
   async create(email: string, mot_de_passe: string, nom?: string, prenom?: string) {
     return this.prisma.utilisateurs.create({
       data: { email, mot_de_passe, nom, prenom },
