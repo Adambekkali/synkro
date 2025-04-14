@@ -1,4 +1,4 @@
--- Création de la base de données
+-- Création de la base de données avec jeu de caractères et collation
 CREATE DATABASE IF NOT EXISTS gestion_evenements;
 USE gestion_evenements;
 
@@ -12,7 +12,6 @@ CREATE TABLE utilisateurs (
     date_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-
 -- Table des événements
 CREATE TABLE evenements (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -25,13 +24,12 @@ CREATE TABLE evenements (
     date_limite_inscription DATETIME NULL,
     est_prive BOOLEAN DEFAULT FALSE,
     code_partage VARCHAR(20) UNIQUE,
-    proprietaire_id INT NOT NULL, -- Clé étrangère vers l'utilisateur qui a créé l'événement
+    proprietaire_id INT NOT NULL,
     date_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     est_annule BOOLEAN DEFAULT FALSE,
     categorie ENUM('Conférence', 'Formation', 'Social', 'Sport', 'Virtuel','Fête') DEFAULT 'Social',
     FOREIGN KEY (proprietaire_id) REFERENCES utilisateurs(id) ON DELETE CASCADE
 );
-
 
 -- Table des inscriptions
 CREATE TABLE inscriptions (
@@ -67,9 +65,9 @@ CREATE TABLE statistiques (
 );
 
 -- Ajout d'index pour les performances
--- ALTER TABLE evenements ADD INDEX idx_evenements_dates (date_debut, date_fin);
--- ALTER TABLE evenements ADD INDEX idx_evenements_proprietaire (proprietaire_id);
--- ALTER TABLE inscriptions ADD INDEX idx_inscriptions_statut (statut);
+CREATE INDEX idx_evenements_dates ON evenements (date_debut, date_fin);
+CREATE INDEX idx_evenements_proprietaire ON evenements (proprietaire_id);
+CREATE INDEX idx_inscriptions_statut ON inscriptions (statut);
 
 -- Insertion des utilisateurs
 INSERT INTO utilisateurs (email, mot_de_passe, nom, prenom)

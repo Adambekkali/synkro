@@ -1,5 +1,5 @@
 // src/auth/auth.controller.ts
-import { Controller, Post, Request, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Request, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 
@@ -13,4 +13,10 @@ export class AuthController {
     console.log(`Login attempt with email: ${req.user.email}`); // Log pour vérifier l'email reçu
     return this.authService.login(req.user);
   }
+  @UseGuards(AuthGuard('jwt'))
+  @Get('verify')
+  getProfile(@Request() req) {
+  return req.user;
+}
+
 }

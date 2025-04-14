@@ -36,4 +36,21 @@ export class EvenementsService {
         });
       }
 
+      getEvenementsWithParticipants(id) {
+        return this.prisma.evenements.findUnique({
+          where: { id }, 
+          include: {
+            inscriptions: {include : { utilisateurs: true }}, 
+          },
+        });
+      }
+
+      getEventsByOrganizer(id: number) {
+        return this.prisma.evenements.findMany({
+          where: { proprietaire_id: id }, 
+        });
+      }
+      
     }
+
+   

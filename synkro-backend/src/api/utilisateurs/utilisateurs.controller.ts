@@ -19,6 +19,15 @@ export class UtilisateursController {
     return this.utilisateursService.getById(idNumber);
   }
 
+  @Get(':id/evenements')
+  getByIdWithEvents(@Param('id') id: String) {
+    const idNumber = Number(id);
+    if (isNaN(idNumber)) {
+        throw new Error('Invalid ID format. ID must be a number.');
+        }
+    return this.utilisateursService.getByIdWithEvents(idNumber);
+  }
+
   @Post()
   create(@Body() { email, mot_de_passe, nom, prenom }: { email: string; mot_de_passe: string; nom?: string; prenom?: string }) {
     return this.utilisateursService.create(email, mot_de_passe, nom, prenom);

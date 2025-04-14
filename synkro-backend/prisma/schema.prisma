@@ -1,7 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   binaryTargets = ["native", "debian-openssl-3.0.x"]
-
 }
 
 datasource db {
@@ -21,10 +20,10 @@ model evenements {
   est_prive               Boolean?              @default(false)
   code_partage            String?               @unique(map: "code_partage") @db.VarChar(20)
   proprietaire_id         Int
-  date_creation           DateTime              @default(now()) @db.Timestamp(0)
+  date_creation           DateTime?             @default(now()) @db.Timestamp(0)
   est_annule              Boolean?              @default(false)
   categorie               evenements_categorie? @default(Social)
-  utilisateurs            utilisateurs          @relation(fields: [proprietaire_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "evenements_ibfk_1")
+  utilisateurs            utilisateurs          @relation(fields: [proprietaire_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "evenements_ibfk_1")
   inscriptions            inscriptions[]
   invitations             invitations[]
   statistiques            statistiques?
@@ -36,10 +35,10 @@ model inscriptions {
   id               Int                  @id @default(autoincrement())
   evenement_id     Int
   utilisateur_id   Int
-  date_inscription DateTime             @default(now()) @db.Timestamp(0)
+  date_inscription DateTime?            @default(now()) @db.Timestamp(0)
   statut           inscriptions_statut? @default(en_attente)
-  evenements       evenements           @relation(fields: [evenement_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "inscriptions_ibfk_1")
-  utilisateurs     utilisateurs         @relation(fields: [utilisateur_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "inscriptions_ibfk_2")
+  evenements       evenements           @relation(fields: [evenement_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "inscriptions_ibfk_1")
+  utilisateurs     utilisateurs         @relation(fields: [utilisateur_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "inscriptions_ibfk_2")
 
   @@unique([evenement_id, utilisateur_id], map: "inscription_unique")
   @@index([utilisateur_id], map: "utilisateur_id")
@@ -50,9 +49,9 @@ model invitations {
   evenement_id    Int
   email_invite    String              @db.VarChar(100)
   code_invitation String              @unique(map: "code_invitation") @db.VarChar(50)
-  date_envoi      DateTime            @default(now()) @db.Timestamp(0)
+  date_envoi      DateTime?           @default(now()) @db.Timestamp(0)
   statut          invitations_statut? @default(en_attente)
-  evenements      evenements          @relation(fields: [evenement_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "invitations_ibfk_1")
+  evenements      evenements          @relation(fields: [evenement_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "invitations_ibfk_1")
 
   @@index([evenement_id], map: "evenement_id")
 }
@@ -62,8 +61,8 @@ model statistiques {
   total_vues           Int?       @default(0)
   total_inscriptions   Int?       @default(0)
   total_presents       Int?       @default(0)
-  derniere_mise_a_jour DateTime   @default(now()) @db.Timestamp(0)
-  evenements           evenements @relation(fields: [evenement_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "statistiques_ibfk_1")
+  derniere_mise_a_jour DateTime?  @default(now()) @db.Timestamp(0)
+  evenements           evenements @relation(fields: [evenement_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "statistiques_ibfk_1")
 }
 
 model utilisateurs {
@@ -72,7 +71,7 @@ model utilisateurs {
   mot_de_passe  String         @db.VarChar(255)
   nom           String?        @db.VarChar(50)
   prenom        String?        @db.VarChar(50)
-  date_creation DateTime       @default(now()) @db.Timestamp(0)
+  date_creation DateTime?      @default(now()) @db.Timestamp(0)
   evenements    evenements[]
   inscriptions  inscriptions[]
 }
@@ -91,10 +90,10 @@ enum invitations_statut {
 }
 
 enum evenements_categorie {
-  Conf_rence @map("Conf?rence")
+  Conf__rence @map("ConfÃ©rence")
   Formation
   Social
   Sport
   Virtuel
-  F_te       @map("F?te")
+  F__te       @map("FÃªte")
 }

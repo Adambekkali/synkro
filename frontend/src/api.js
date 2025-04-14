@@ -44,4 +44,38 @@ export async function createUser(user) {
   }
 }
 
+  export async function getUserWithEvents(id){
+    try {
+        const response = await fetch(`${API_URL}/utilisateurs/${id}/evenements`);
+        if (!response.ok) {
+          throw new Error(`Erreur lors de la récupération de l'utilisateur avec ID ${id}`);
+        }
+        return await response.json();
+      } catch (error) {
+        console.error(error);
+        return null;
+      }
+    }
+
+export async function getEventsByOrganizer(userId) {
+  try {
+    const response = await fetch(`${API_URL}/evenements/${userId}/ByOrganizer`);
+
+    if (!response.ok) {
+      throw new Error("Erreur lors de la récupération des événements de l'organisateur");
+    }
+    return await response.json();
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+}
+
+
+
+
+
+
+
+
 

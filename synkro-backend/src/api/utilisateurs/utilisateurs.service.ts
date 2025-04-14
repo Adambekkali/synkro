@@ -15,6 +15,18 @@ export class UtilisateursService {
     });
   }
 
+  async getByIdWithEvents(id: number) {
+    return this.prisma.utilisateurs.findUnique({
+      where: { id },
+      include
+    : {
+        evenements: true, 
+        inscriptions: true
+        
+      },
+    });
+  }
+
   async findByUsername(email: string) {
     return this.prisma.utilisateurs.findUnique({
       where: { email },

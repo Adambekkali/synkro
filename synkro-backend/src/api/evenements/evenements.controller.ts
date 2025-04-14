@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Param } from '@nestjs/common';
 import { EvenementsService } from './evenements.service';
-import { evenements_categorie } from '@prisma/client';
+import {evenements_categorie} from '@prisma/client';
 
 @Controller('evenements')
 export class EvenementsController {
@@ -20,8 +20,25 @@ export class EvenementsController {
     return this.evenementsService.getById(idNumber);
   }
 
+  @Get(':id/participants')
+  getByIdWithParticipants(@Param('id') id: String) {
+    const idNumber = Number(id);
+    if (isNaN(idNumber)) {
+        throw new Error('Invalid ID format. ID must be a number.');
+        }
+    return this.evenementsService.getEvenementsWithParticipants(idNumber);
+  }
+
   @Post()
   create(@Body() { titre, description, date_debut, date_fin, lieu, max_participants, date_limite_inscription, est_prive, proprietaire_id, categorie }: { titre: string; description: string; date_debut: Date; date_fin: Date; lieu: string; max_participants: number; date_limite_inscription: Date; est_prive: boolean; proprietaire_id: number; categorie: evenements_categorie }) {
     return this.evenementsService.create(titre, description, date_debut, date_fin, lieu, max_participants, date_limite_inscription, est_prive, proprietaire_id, categorie);
   }
-}
+
+  @Get(':id/ByOrganizer')
+  getEventsByOrganizer(@Param('id') id: String) {
+    const idNumber = Number(id);
+    if (isNaN(idNumber)) {
+        throw new Error('Invalid ID format. ID must be a number.');
+        }
+    return this.evenementsService.getEventsByOrganizer(idNumber);
+}  }
