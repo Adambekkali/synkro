@@ -20,6 +20,16 @@ export class InscriptionsController {
     return this.inscriptionsService.getById(idNumber);
   }
 
+  @Get('user/:id')
+  getInscriptionsByUser(@Param('id') id: string) {
+    const idNumber = Number(id);
+    if (isNaN(idNumber)) {
+        throw new Error('Invalid ID format. ID must be a number.');
+        }
+    return this.inscriptionsService.getInscriptionsByUser(idNumber);
+  }
+  
+
   @Post()
   create(@Body() { evenement_id,utilisateur_id,date_inscription,statut}: { evenement_id: number; utilisateur_id: number; date_inscription: Date; statut: inscriptions_statut }) {
     return this.inscriptionsService.create(

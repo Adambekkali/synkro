@@ -16,6 +16,15 @@ export class InvitationsService {
     });
   }
 
+  async getInvitationsByUser (email_invite : string) {
+    return this.prisma.invitations.findMany({
+      where: { email_invite },
+      include: {
+        evenements: true,
+      }
+    });
+  }
+
   async create(data: { evenement_id: number; email_invite: string; code_invitation: string; date_envoi: Date; statut: invitations_statut; }) {
     return this.prisma.invitations.create({
       data: {

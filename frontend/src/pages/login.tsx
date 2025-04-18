@@ -4,6 +4,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
+import '@/app/globals.css'; // si tu as configuré `@` dans `tsconfig.json`
+
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');

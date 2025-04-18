@@ -27,5 +27,12 @@ export class InvitationsController {
       { evenement_id, email_invite, code_invitation, statut, date_envoi }
     );
   }     
+  @Get('user/:email')
+  getInvitationsByUser(@Param('email') email: string) {
+    
+
+    return this.invitationsService.getInvitationsByUser(email);
+
+  }
 
 }

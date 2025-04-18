@@ -26,6 +26,17 @@ export class InscriptionsService {
       },
     });
   }
+
+  async getInscriptionsByUser(id: number) {
+    return this.prisma.inscriptions.findMany({
+      where: { utilisateur_id: id },
+      include: {
+        evenements: true,
+        utilisateurs: true
+      }
+    });
   }
+  }
+
   
 

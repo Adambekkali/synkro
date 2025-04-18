@@ -28,7 +28,8 @@ model evenements {
   invitations             invitations[]
   statistiques            statistiques?
 
-  @@index([proprietaire_id], map: "proprietaire_id")
+  @@index([date_debut, date_fin], map: "idx_evenements_dates")
+  @@index([proprietaire_id], map: "idx_evenements_proprietaire")
 }
 
 model inscriptions {
@@ -42,6 +43,18 @@ model inscriptions {
 
   @@unique([evenement_id, utilisateur_id], map: "inscription_unique")
   @@index([utilisateur_id], map: "utilisateur_id")
+  @@index([statut], map: "idx_inscriptions_statut")
+}
+
+model utilisateurs {
+  id            Int            @id @default(autoincrement())
+  email         String         @unique(map: "email") @db.VarChar(100)
+  mot_de_passe  String         @db.VarChar(255)
+  nom           String?        @db.VarChar(50)
+  prenom        String?        @db.VarChar(50)
+  date_creation DateTime?      @default(now()) @db.Timestamp(0)
+  evenements    evenements[]
+  inscriptions  inscriptions[]
 }
 
 model invitations {
@@ -65,28 +78,11 @@ model statistiques {
   evenements           evenements @relation(fields: [evenement_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "statistiques_ibfk_1")
 }
 
-model utilisateurs {
-  id            Int            @id @default(autoincrement())
-  email         String         @unique(map: "email") @db.VarChar(100)
-  mot_de_passe  String         @db.VarChar(255)
-  nom           String?        @db.VarChar(50)
-  prenom        String?        @db.VarChar(50)
-  date_creation DateTime?      @default(now()) @db.Timestamp(0)
-  evenements    evenements[]
-  inscriptions  inscriptions[]
-}
-
 enum inscriptions_statut {
   en_attente
   confirmee
   annulee
   present
-}
-
-enum invitations_statut {
-  en_attente
-  acceptee
-  refusee
 }
 
 enum evenements_categorie {
@@ -96,4 +92,10 @@ enum evenements_categorie {
   Sport
   Virtuel
   F__te       @map("FÃªte")
+}
+
+enum invitations_statut {
+  en_attente
+  acceptee
+  refusee
 }

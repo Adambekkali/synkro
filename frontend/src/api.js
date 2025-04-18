@@ -71,6 +71,33 @@ export async function getEventsByOrganizer(userId) {
   }
 }
 
+export async function getInvitationsByUser(email) {
+  try {
+    const response = await fetch(`${API_URL}/invitations/user/${email}`);
+    if (!response.ok) {
+      throw new Error("Erreur lors de la récupération des invitations");
+    }
+    return await response.json();
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+}
+
+export async function getInscriptionsByUser(userId) {
+  try {
+    const response = await fetch(`${API_URL}/inscriptions/user/${userId}`);
+    if (!response.ok) {
+      throw new Error("Erreur lors de la récupération des inscriptions");
+    }
+    return await response.json();
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+} 
+
+
 
 
 
