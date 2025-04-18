@@ -11,7 +11,6 @@ export default function Profil() {
   }
 
   const [user, setUser] = React.useState<User | null>(null);
-  const [error, setError] = React.useState<Error | null>(null);
 
   // Récupère l'id de l'utilisateur
   useEffect(() => {
@@ -24,12 +23,11 @@ export default function Profil() {
         const userId = parsedToken?.id;
         console.log("User ID:", userId);
         const user = await getUserById(userId);
-      setUser(user);
-    }
-  };
-    fetchUserData().catch((err) => {
+        setUser(user);
+      }
+    };
+    fetchUserData().catch((err: unknown) => {
       console.error("Error fetching user data:", err);
-      setError(err);
     });
   }, []);
 
@@ -46,11 +44,9 @@ export default function Profil() {
               <p>
                 <strong>Email:</strong> {user.email}
               </p>
-
               <p>
                 <strong>Prénom:</strong> {user.prenom}
               </p>
-
             </div>
           ) : (
             <p>Chargement des données...</p>
@@ -59,13 +55,4 @@ export default function Profil() {
       </div>
     </Layout>
   );
-}
-
-function fetchUserData() {
-  throw new Error("Function not implemented.");
-}
-
-
-function setError(err: any) {
-  throw new Error("Function not implemented.");
 }
