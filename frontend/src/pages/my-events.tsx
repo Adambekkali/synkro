@@ -1,12 +1,28 @@
 import { useEffect, useState } from "react";
-import { getEventsByOrganizer, getInscriptionsByUser, getInvitationsByUser, getUserById } from "@/api"; // Remplace par ton import correct
+import { getEventsByOrganizer, getInscriptionsByUser, getInvitationsByUser } from "@/api"; // Remplace par ton import correct
 import Layout from "@/app/layout"; 
-import { Calendar, MapPin, Clock, Users, Tag } from 'lucide-react';
+import { Calendar, MapPin, Clock, Tag } from 'lucide-react';
+
+interface Event {
+  titre: string;
+  date_debut: string;
+  lieu: string;
+  categorie?: string;
+}
+
+interface Invitation {
+  evenements: Event;
+}
+
+interface Inscription {
+  evenements: Event;
+  statut: string;
+}
 
 export default function MyEvents() {
-  const [myEvents, setMyEvents] = useState<any[]>([]);
-  const [myInvitations, setMyInvitations] = useState<any[]>([]);
-  const [myInscriptions, setMyInscriptions] = useState<any[]>([]);
+  const [myEvents, setMyEvents] = useState<Event[]>([]);
+  const [myInvitations, setMyInvitations] = useState<Invitation[]>([]);
+  const [myInscriptions, setMyInscriptions] = useState<Inscription[]>([]);
   const [loading, setLoading] = useState<boolean>(true); // État de chargement
   const [activeTab, setActiveTab] = useState('organized');
   useEffect(() => {
@@ -78,7 +94,7 @@ export default function MyEvents() {
       {/* Organized Events */}
       {activeTab === 'organized' && (
         <div className="space-y-4">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">Événements que j'organise</h2>
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">Événements que j&apos;organise</h2>
           
           {myEvents?.length > 0 ? (
             <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
@@ -119,7 +135,7 @@ export default function MyEvents() {
             </div>
           ) : (
             <div className="bg-white p-8 text-center rounded-lg border border-gray-200">
-              <div className="text-gray-500 mb-4">Vous n'avez pas encore créé d'événement</div>
+              <div className="text-gray-500 mb-4">Vous n&apos;avez pas encore créé d&apos;événement</div>
               <button className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
                 Créer un événement
               </button>
@@ -169,7 +185,7 @@ export default function MyEvents() {
             </div>
           ) : (
             <div className="bg-white p-8 text-center rounded-lg border border-gray-200">
-              <div className="text-gray-500">Vous n'avez reçu aucune invitation</div>
+              <div className="text-gray-500">Vous n&apos;avez reçu aucune invitation</div>
             </div>
           )}
         </div>
@@ -225,7 +241,7 @@ export default function MyEvents() {
             </div>
           ) : (
             <div className="bg-white p-8 text-center rounded-lg border border-gray-200">
-              <div className="text-gray-500">Vous n'êtes inscrit à aucun événement</div>
+              <div className="text-gray-500">Vous n&apos;êtes inscrit à aucun événement</div>
             </div>
           )}
         </div>
