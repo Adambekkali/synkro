@@ -1,4 +1,5 @@
 -- Création de la base de données
+Drop DATABASE IF EXISTS gestion_evenements;
 CREATE DATABASE IF NOT EXISTS gestion_evenements;
 USE gestion_evenements;
 
@@ -39,7 +40,7 @@ CREATE TABLE inscriptions (
     evenement_id INT NOT NULL,
     utilisateur_id INT NOT NULL,
     date_inscription TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    statut ENUM('en_attente', 'confirmee', 'annulee', 'present') DEFAULT 'en_attente',
+    statut ENUM('en_attente', 'confirmée', 'annulee', 'present') DEFAULT 'en_attente',
     FOREIGN KEY (evenement_id) REFERENCES evenements(id) ON DELETE CASCADE,
     FOREIGN KEY (utilisateur_id) REFERENCES utilisateurs(id) ON DELETE CASCADE,
     UNIQUE KEY inscription_unique (evenement_id, utilisateur_id)
@@ -87,9 +88,9 @@ VALUES
 -- Insertion des inscriptions
 INSERT INTO inscriptions (evenement_id, utilisateur_id, statut)
 VALUES 
-(1, 1, 'confirmee'),
+(1, 1, 'Confirmée'),
 (1, 2, 'en_attente'),
-(2, 3, 'confirmee');
+(2, 3, 'Confirmée');
 
 -- Insertion des invitations
 INSERT INTO invitations (evenement_id, email_invite, code_invitation, statut)

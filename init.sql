@@ -1,5 +1,10 @@
 -- Création de la base de données avec jeu de caractères et collation
-CREATE DATABASE IF NOT EXISTS gestion_evenements;
+Drop DATABASE IF EXISTS gestion_evenements;
+SET NAMES utf8mb4;
+SET CHARACTER SET utf8mb4;
+SET collation_connection = utf8mb4_unicode_ci;
+
+CREATE DATABASE IF NOT EXISTS gestion_evenements CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE gestion_evenements;
 
 -- Table des utilisateurs

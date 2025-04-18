@@ -205,7 +205,7 @@ export default function MyEvents() {
                     <div className="flex items-center mb-3">
                       <span
                       className={`px-4 py-2 rounded-full text-sm font-bold ${
-                        inscription.statut === "confirmé"
+                        inscription.statut === "Confirmée"
                         ? "bg-green-200 text-green-900 border border-green-800"
                         : inscription.statut === "en attente"
                         ? "bg-yellow-200 text-yellow-900 border border-yellow-800"

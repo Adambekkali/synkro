@@ -8,6 +8,12 @@ services:
       MYSQL_DATABASE: gestion_evenements
       MYSQL_USER: user
       MYSQL_PASSWORD: password
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --default-authentication-plugin=mysql_native_password
+      --init-connect='SET NAMES utf8mb4;'
+      --skip-character-set-client-handshake
     ports:
       - "3307:3306"
     volumes:
