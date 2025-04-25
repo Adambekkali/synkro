@@ -76,7 +76,8 @@ CREATE INDEX idx_inscriptions_statut ON inscriptions (statut);
 
 -- Insertion des utilisateurs
 INSERT INTO utilisateurs (email, mot_de_passe, nom, prenom)
-VALUES 
+VALUES
+('test@test.com', 'test', 'Testeur', 'Kiffeur'),
 ('user1@example.com', 'password1', 'Dupont', 'Jean'),
 ('user2@example.com', 'password2', 'Martin', 'Sophie'),
 ('user3@example.com', 'password3', 'Durand', 'Alex'),
