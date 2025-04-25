@@ -61,7 +61,7 @@ export default function LoginPage() {
       
       setTimeout(() => {
         setShowLogin(true);
-        setIsLoading(false);
+        setIsLoading(false); 
         setEmail('');
         setPassword('');
       }, 1000);
