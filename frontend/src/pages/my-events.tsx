@@ -4,6 +4,7 @@ import Layout from "@/app/layout";
 import { Calendar, MapPin, Clock, Tag } from 'lucide-react';
 
 interface Event {
+  id: string;
   titre: string;
   date_debut: string;
   lieu: string;
@@ -125,13 +126,22 @@ export default function MyEvents() {
                         {event.categorie || 'Social'}
                       </span>
                       
-                      <button className="text-sm font-medium text-blue-600 hover:text-blue-800">
+                        <button 
+                        className="text-sm font-medium text-blue-600 hover:text-blue-800 cursor-pointer"
+                        onClick={() => window.location.href = `/details-events/${event.id}`}
+                        >
                         Détails →
-                      </button>
+                        </button>
                     </div>
                   </div>
                 </div>
               ))}
+               <div className="bg-white p-8 text-center rounded-lg border border-gray-200">
+              <div className="text-gray-500 mb-4">Ou créer un événement</div>
+              <button className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                Créer un événement
+              </button>
+            </div>
             </div>
           ) : (
             <div className="bg-white p-8 text-center rounded-lg border border-gray-200">

@@ -38,6 +38,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <Link href="/" className="hover:text-blue-600 transition-colors">Accueil</Link>
             <Link href="/about" className="hover:text-blue-600 transition-colors">À propos</Link>
             <a href="/about" className="hover:text-blue-600 transition-colors">À propos</a>
+            <div className="flex justify-end mb-4">
+        <button
+          onClick={() => {
+            localStorage.removeItem('token');
+            window.location.reload();
+          }}
+          className="bg-gradient-to-r from-red-500 to-red-700 hover:from-red-600 hover:to-red-800 text-white font-semibold py-2 px-4 rounded-xl shadow-lg transition transform hover:scale-105 hover:cursor-pointer touch:cursor-pointer"
+        >
+          Déconnexion
+        </button>
+      </div>
           </header>
         {/* MAIN */}
         <main className="max-w-6xl mx-auto p-6 flex-grow">{children}</main>

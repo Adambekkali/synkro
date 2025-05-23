@@ -6,6 +6,7 @@ export default function Home(){
 
     
     <div className="max-w-5xl mx-auto px-4 py-10">
+     
       <h1 className="text-5xl font-extrabold mb-10 text-center text-white text-shadow-lg">
         Welcome to Synkro
       </h1>
@@ -31,6 +32,7 @@ export default function Home(){
           Mon profil
         </Link>
       </div>
+
     </div>
   );
 }

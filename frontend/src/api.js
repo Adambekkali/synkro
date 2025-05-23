@@ -95,6 +95,8 @@ export async function getInscriptionsByUser(userId) {
     console.error(error);
     return null;
   }
+
+  
 } 
 
 
