@@ -24,7 +24,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     })
     .catch((err) => {
       localStorage.removeItem('token');
-      router.push('/login');
+      router.push('/login/page');
       console.error('Token invalide', err);
     });
 
@@ -37,7 +37,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <h1 className="text-2xl font-extrabold text-blue-600 tracking-tight">Synkro</h1>
             <Link href="/" className="hover:text-blue-600 transition-colors">Accueil</Link>
             <Link href="/about" className="hover:text-blue-600 transition-colors">À propos</Link>
-            <a href="/about" className="hover:text-blue-600 transition-colors">À propos</a>
+            <a href="/profil" className="hover:text-blue-600 transition-colors">Profil</a>
             <div className="flex justify-end mb-4">
         <button
           onClick={() => {

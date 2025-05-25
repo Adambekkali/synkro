@@ -64,7 +64,7 @@ export default function MyEvents() {
   }
 
   return (
-    <Layout>
+   
     <div className="max-w-6xl mx-auto p-6 bg-gray-50 rounded-lg shadow-sm">
       <h1 className="text-3xl font-bold mb-8 text-center text-blue-800">
         Mon Espace Événements
@@ -128,7 +128,7 @@ export default function MyEvents() {
                       
                         <button 
                         className="text-sm font-medium text-blue-600 hover:text-blue-800 cursor-pointer"
-                        onClick={() => window.location.href = `/details-events/${event.id}`}
+                        onClick={() => window.location.href = `/about-events/${event.id}`}
                         >
                         Détails →
                         </button>
@@ -259,6 +259,6 @@ export default function MyEvents() {
     </div>
       
 
-    </Layout>
+  
   );
 }

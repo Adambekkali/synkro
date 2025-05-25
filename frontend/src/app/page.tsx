@@ -129,7 +129,7 @@ export default function MyEvents() {
                       
                         <button 
                         className="text-sm font-medium text-blue-600 hover:text-blue-800 cursor-pointer"
-                        onClick={() => window.location.href = `/details-events/${event.id}`}
+                        onClick={() => window.location.href = `/about-event/${event.id}`}
                         >
                         Détails →
                         </button>

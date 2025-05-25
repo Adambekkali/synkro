@@ -95,9 +95,21 @@ export async function getInscriptionsByUser(userId) {
     console.error(error);
     return null;
   }
-
-  
+}
+export async function getEventById(eventId) {
+  try {
+    const response = await fetch(`${API_URL}/evenements/${eventId}`);
+    if (!response.ok) {
+      throw new Error(`Erreur lors de la récupération de l'événement avec ID ${eventId}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
 } 
+
+
 
 
 
