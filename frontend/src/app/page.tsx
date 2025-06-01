@@ -1,7 +1,6 @@
-
 "use client";
 import { useEffect, useState } from "react";
-import { getEventsByOrganizer, getInscriptionsByUser, getInvitationsByUser } from "@/api"; // Remplace par ton import correct
+import { createEvent, getEventsByOrganizer, getInscriptionsByUser, getInvitationsByUser } from "@/api"; // Remplace par ton import correct
 import { Calendar, MapPin, Clock, Tag } from 'lucide-react';
 
 interface Event {
@@ -9,7 +8,7 @@ interface Event {
   titre: string;
   date_debut: string;
   lieu: string;
-  categorie?: string;
+  evenements_categorie?: string;
 }
 
 interface Invitation {
@@ -27,6 +26,55 @@ export default function MyEvents() {
   const [myInscriptions, setMyInscriptions] = useState<Inscription[]>([]);
   const [loading, setLoading] = useState<boolean>(true); // État de chargement
   const [activeTab, setActiveTab] = useState('organized');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newEvent, setNewEvent] = useState<Event>({
+    id: '',
+    titre: '',
+    date_debut: '',
+    lieu: '',
+    evenements_categorie: '',
+  });
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      const parsedToken = JSON.parse(
+        Buffer.from(token.split(".")[1], "base64").toString("utf-8")
+      );
+      setCurrentUserId(parsedToken?.id || null);
+    }
+  }, []);
+
+  // Dummy handler for event creation (replace with your actual logic)
+  const handleCreateEvent = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!currentUserId) {
+      alert("Utilisateur non authentifié");
+      return;
+    }
+    // Convertir les dates au format ISO-8601 si elles existent
+    const eventToCreate = {
+      ...newEvent,
+      date_debut: newEvent.date_debut ? new Date(newEvent.date_debut).toISOString() : undefined,
+      date_fin: (newEvent as any).date_fin ? new Date((newEvent as any).date_fin).toISOString() : undefined,
+      date_limite_inscription: (newEvent as any).date_limite_inscription
+        ? new Date((newEvent as any).date_limite_inscription).toISOString()
+        : undefined,
+      proprietaire_id: currentUserId,
+    };
+
+    await createEvent(eventToCreate);
+    setShowCreateModal(false);
+    setNewEvent({
+      id: '',
+      titre: '',
+      date_debut: '',
+      lieu: '',
+      evenements_categorie: '',
+    });
+  };
+
   useEffect(() => {
     const fetchUserData = async () => {
       const token = localStorage.getItem("token");
@@ -124,7 +172,7 @@ export default function MyEvents() {
                     <div className="flex justify-between items-center mt-4">
                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                         <Tag size={12} className="mr-1" />
-                        {event.categorie || 'Social'}
+                        {event.evenements_categorie || 'Social'}
                       </span>
                       
                         <button 
@@ -137,19 +185,226 @@ export default function MyEvents() {
                   </div>
                 </div>
               ))}
-               <div className="bg-white p-8 text-center rounded-lg border border-gray-200">
+            <div className="bg-white p-8 text-center rounded-lg border border-gray-200">
               <div className="text-gray-500 mb-4">Ou créer un événement</div>
-              <button className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
+              <button
+                className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                onClick={() => setShowCreateModal(true)}
+              >
                 Créer un événement
               </button>
+              {showCreateModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+                  <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md relative">
+                    <button
+                      className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+                      onClick={() => setShowCreateModal(false)}
+                    >
+                      ×
+                    </button>
+                    <h2 className="text-xl font-bold mb-4">Créer un événement</h2>
+                    <form
+                      onSubmit={handleCreateEvent}
+                      className="space-y-4"
+                    >
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Titre</label>
+                        <input
+                          type="text"
+                          className="w-full border rounded px-3 py-2"
+                          value={newEvent.titre}
+                          onChange={e => setNewEvent({ ...newEvent, titre: e.target.value })}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Description</label>
+                        <textarea
+                          className="w-full border rounded px-3 py-2"
+                          value={(newEvent as any).description || ""}
+                          onChange={e => setNewEvent({ ...newEvent, description: e.target.value } as any)}
+                          rows={3}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Lieu</label>
+                        <input
+                          type="text"
+                          className="w-full border rounded px-3 py-2"
+                          value={newEvent.lieu}
+                          onChange={e => setNewEvent({ ...newEvent, lieu: e.target.value })}
+                          required
+                        />
+                      </div>
+                      <div className="flex gap-4">
+                        <div className="flex-1">
+                          <label className="block text-sm font-medium mb-1">Date de début</label>
+                          <input
+                            type="datetime-local"
+                            className="w-full border rounded px-3 py-2"
+                            value={newEvent.date_debut}
+                            onChange={e => setNewEvent({ ...newEvent, date_debut: e.target.value })}
+                            required
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <label className="block text-sm font-medium mb-1">Date de fin</label>
+                          <input
+                            type="datetime-local"
+                            className="w-full border rounded px-3 py-2"
+                            value={(newEvent as any).date_fin || ""}
+                            onChange={e => setNewEvent({ ...newEvent, date_fin: e.target.value } as any)}
+                            required
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Nombre max. de participants</label>
+                        <input
+                          type="number"
+                          className="w-full border rounded px-3 py-2"
+                          value={(newEvent as any).max_participants || ""}
+                          onChange={e => setNewEvent({ ...newEvent, max_participants: e.target.value ? parseInt(e.target.value) : undefined } as any)}
+                          min={1}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Date limite d'inscription</label>
+                        <input
+                          type="datetime-local"
+                          className="w-full border rounded px-3 py-2"
+                          value={(newEvent as any).date_limite_inscription || ""}
+                          onChange={e => setNewEvent({ ...newEvent, date_limite_inscription: e.target.value } as any)}
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id="est_prive"
+                          checked={(newEvent as any).est_prive || false}
+                          onChange={e => setNewEvent({ ...newEvent, est_prive: e.target.checked } as any)}
+                        />
+                        <label htmlFor="est_prive" className="text-sm font-medium">Événement privé</label>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Catégorie</label>
+                        <select
+                          className="w-full border rounded px-3 py-2"
+                          value={newEvent.evenements_categorie || "Social"}
+                          onChange={e => setNewEvent({ ...newEvent, evenements_categorie: e.target.value })}
+                        >
+                          <option value="Conférence">Conférence</option>
+                          <option value="Formation">Formation</option>
+                          <option value="Social">Social</option>
+                          <option value="Sport">Sport</option>
+                          <option value="Virtuel">Virtuel</option>
+                          <option value="Fête">Fête</option>
+                        </select>
+                      </div>
+                      <div className="flex justify-end">
+                        <button
+                          type="button"
+                          className="mr-2 px-4 py-2 rounded bg-gray-200 text-gray-700"
+                          onClick={() => setShowCreateModal(false)}
+                        >
+                          Annuler
+                        </button>
+                        <button
+                          type="submit"
+                          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                        >
+                          Créer
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
             </div>
             </div>
           ) : (
             <div className="bg-white p-8 text-center rounded-lg border border-gray-200">
-              <div className="text-gray-500 mb-4">Vous n&apos;avez pas encore créé d&apos;événement</div>
-              <button className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
-                Créer un événement
-              </button>
+              <div>
+                <div className="text-gray-500 mb-4">Vous n&apos;avez pas encore créé d&apos;événement</div>
+                <button
+                  className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg  hover:cursor-pointer transition-colors"
+                  onClick={() => setShowCreateModal(true)}
+                >
+                  Créer un événement
+                </button>
+                {showCreateModal && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+                    <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md relative">
+                      <button
+                        className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+                        onClick={() => setShowCreateModal(false)}
+                      >
+                        ×
+                      </button>
+                      <h2 className="text-xl font-bold mb-4">Créer un événement</h2>
+                      <form
+                        onSubmit={handleCreateEvent}
+                        className="space-y-4"
+                      >
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Titre</label>
+                          <input
+                            type="text"
+                            className="w-full border rounded px-3 py-2"
+                            value={newEvent.titre}
+                            onChange={e => setNewEvent({ ...newEvent, titre: e.target.value })}
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Date de début</label>
+                          <input
+                            type="datetime-local"
+                            className="w-full border rounded px-3 py-2"
+                            value={newEvent.date_debut}
+                            onChange={e => setNewEvent({ ...newEvent, date_debut: e.target.value })}
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Lieu</label>
+                          <input
+                            type="text"
+                            className="w-full border rounded px-3 py-2"
+                            value={newEvent.lieu}
+                            onChange={e => setNewEvent({ ...newEvent, lieu: e.target.value })}
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Catégorie</label>
+                          <input
+                            type="text"
+                            className="w-full border rounded px-3 py-2"
+                            value={newEvent.evenements_categorie}
+                            onChange={e => setNewEvent({ ...newEvent, evenements_categorie: e.target.value })}
+                          />
+                        </div>
+                        <div className="flex justify-end">
+                          <button
+                            type="button"
+                            className="mr-2 px-4 py-2 rounded bg-gray-200 text-gray-700"
+                            onClick={() => setShowCreateModal(false)}
+                          >
+                            Annuler
+                          </button>
+                          <button
+                            type="submit"
+                            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                          >
+                            Créer
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>

@@ -1,3 +1,5 @@
+import { create } from "domain";
+
 const API_URL = "http://localhost:3000"; 
 
 export async function getUsers() {
@@ -109,7 +111,24 @@ export async function getEventById(eventId) {
   }
 } 
 
-
+export async function createEvent(event) {
+  try {
+    const response = await fetch(`${API_URL}/evenements`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(event),
+    });
+    if (!response.ok) {
+      throw new Error("Erreur lors de la création de l'événement");
+    }
+    return await response.json();
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+}
 
 
 

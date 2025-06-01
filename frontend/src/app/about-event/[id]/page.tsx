@@ -7,6 +7,10 @@ import React from "react";
 export default function EventPage({ params }: { params: Promise<{ id: string }> }) {
     interface Event {
         max_participants: string;
+        nb_participants: string;
+        id: number;
+        date_fin: string;
+        date_creation: string;
         proprietaire_id: number;
         titre: string;
         description: string;
@@ -76,7 +80,7 @@ export default function EventPage({ params }: { params: Promise<{ id: string }> 
                     <p className="text-gray-700">{event.date_debut}</p>
                 </div>
                 <div className="md:col-span-2">
-                    <span className="block text-sm font-medium text-gray-500">Description</span>
+                    <span className="block text-sm font-medium text-gray-500">Descriptions</span>
                     <p className="text-gray-700">{event.description}</p>
                 </div>
                 <div>
@@ -95,6 +99,9 @@ export default function EventPage({ params }: { params: Promise<{ id: string }> 
                     </button>
                     <button className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-6 py-2 rounded-lg font-semibold shadow hover:from-red-600 hover:to-pink-600 transition">
                     Supprimer
+                    </button>
+                    <button className="bg-gradient-to-r from-green-500 to-teal-500 text-white px-6 py-2 rounded-lg font-semibold shadow hover:from-green-600 hover:to-teal-600 transition">
+                        Inviter des personnes
                     </button>
                 </div>
                 )}
