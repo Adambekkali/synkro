@@ -19,6 +19,13 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
   frontend:
     build:
       context: ./frontend
@@ -28,8 +35,10 @@ services:
     ports:
       - "3001:3001"
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
     command: npm run dev
+
   backend:
     build:
       context: ./synkro-backend
@@ -37,13 +46,20 @@ services:
     environment:
       - NODE_ENV=docker
       - DATABASE_URL=mysql://root:root@mysql:3306/gestion_evenements
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USER=root
+      - DB_PASSWORD=root
+      - DB_NAME=gestion_evenements
     container_name: synkro_backend
     restart: always
     ports:
       - "3000:3000"
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
     command: npm run dev
+
 volumes:
   mysql_data:
     driver: local

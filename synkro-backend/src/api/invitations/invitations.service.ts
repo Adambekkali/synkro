@@ -41,8 +41,8 @@ export class InvitationsService {
     const transporter = nodemailer.createTransport({
       service: 'gmail', // or your email provider
       auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
+        user: "synkro78psg@gmail.com",
+        pass: "xdyq odnr gxji lbkd",
       },
     });
 
@@ -58,6 +58,7 @@ export class InvitationsService {
     } catch (error) {
       // Handle email sending error (log or throw as needed)
       console.error('Failed to send invitation email:', error);
+      
     }
 
     return invitation;

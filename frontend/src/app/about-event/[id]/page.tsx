@@ -1,26 +1,21 @@
 "use client";
 import { useEffect, useState } from "react";
-import { getEventById } from "@/api";
+import { createInvitation, getEventById } from "@/api";
 import Layout from "@/app/layout";
 import React from "react";
+import { Invitation, Event } from "../../types"; // Assuming you have a type for Invitations
+import { create } from "domain";
 
 export default function EventPage({ params }: { params: Promise<{ id: string }> }) {
-    interface Event {
-        max_participants: string;
-        nb_participants: string;
-        id: number;
-        date_fin: string;
-        date_creation: string;
-        proprietaire_id: number;
-        titre: string;
-        description: string;
-        date_debut: string;
-    }
+  
 
     const unwrappedParams = React.use(params);
     const [event, setEvent] = useState<Event | null>(null);
     const [currentUserId, setCurrentUserId] = useState<number | null>(null);
     const [loading, setLoading] = useState(true);
+    const [showInviteModal, setShowInviteModal] = useState(false);
+    const [inviteEmail, setInviteEmail] = useState("");
+    const [inviteStatus, setInviteStatus] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchEvent = async () => {
@@ -100,9 +95,68 @@ export default function EventPage({ params }: { params: Promise<{ id: string }> 
                     <button className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-6 py-2 rounded-lg font-semibold shadow hover:from-red-600 hover:to-pink-600 transition">
                     Supprimer
                     </button>
-                    <button className="bg-gradient-to-r from-green-500 to-teal-500 text-white px-6 py-2 rounded-lg font-semibold shadow hover:from-green-600 hover:to-teal-600 transition">
-                        Inviter des personnes
+                    <button
+                        className="bg-gradient-to-r from-green-500 to-teal-500 text-white px-6 py-2 rounded-lg font-semibold shadow cursor-pointer hover:from-green-600 hover:to-teal-600 transition"
+                        onClick={() => setShowInviteModal(true)}
+                    >
+                        Inviter des personness
                     </button>
+                    {showInviteModal && (
+                        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+                            <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md relative">
+                                <button
+                                    className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
+                                    onClick={() => setShowInviteModal(false)}
+                                >
+                                    ×
+                                </button>
+                                <h3 className="text-xl font-bold mb-4 text-center">Inviter par email</h3>
+                                <form
+                                    onSubmit={async (e) => {
+                                        e.preventDefault();
+                                        // Remplacez ceci par votre logique d'envoi d'invitation
+                                        setInviteStatus("Envoi...");
+                                        try {
+                                        // TODO: call your API to send invitation
+                                        // Example: create an invitation object and send it to your backend
+                                        const invitation = {
+                                            evenement_id: event.id,
+                                            email_invite: inviteEmail,
+                                            code_invitation: Math.random().toString(36).substring(2, 15),
+                                            date_envoi: new Date(),
+                                            invitations_statut: "EN_ATTENTE",
+                                        };
+                                        createInvitation(invitation);
+                                        setInviteStatus("Invitation envoyée !");
+                                        setInviteEmail("");
+                                            
+                                        } catch {
+                                            setInviteStatus("Erreur lors de l'envoi.");
+                                        }
+                                    }}
+                                    className="flex flex-col gap-4"
+                                >
+                                    <input
+                                        type="email"
+                                        required
+                                        placeholder="Adresse email"
+                                        className="border rounded px-3 py-2"
+                                        value={inviteEmail}
+                                        onChange={e => setInviteEmail(e.target.value)}
+                                    />
+                                    <button
+                                        type="submit"
+                                        className="bg-gradient-to-r from-green-500 to-teal-500 text-white px-4 py-2 rounded font-semibold"
+                                    >
+                                        Envoyer l'invitation
+                                    </button>
+                                    {inviteStatus && (
+                                        <div className="text-center text-sm text-gray-600">{inviteStatus}</div>
+                                    )}
+                                </form>
+                            </div>
+                        </div>
+                    )}
                 </div>
                 )}
             </div>

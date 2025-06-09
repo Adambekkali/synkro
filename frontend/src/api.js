@@ -130,6 +130,26 @@ export async function createEvent(event) {
   }
 }
 
+  export async function createInvitation(invitation) {
+    try {
+      const response = await fetch(`${API_URL}/invitations`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(invitation),
+      });
+      if (!response.ok) {
+        throw new Error("Erreur lors de la création de l'invitation");
+      }
+      return await response.json();
+    } catch (error) {
+      console.error(error);
+      return null;
+    }
+}
+
+
 
 
 
