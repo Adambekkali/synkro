@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { createInvitation, getEventById } from "@/api";
+import { createInvitation, deleteEvent, getEventById } from "@/api";
 import Layout from "@/app/layout";
 import React from "react";
 import { Invitation, Event } from "../../types"; // Assuming you have a type for Invitations
@@ -92,8 +92,20 @@ export default function EventPage({ params }: { params: Promise<{ id: string }> 
                     <button className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-6 py-2 rounded-lg font-semibold shadow hover:from-blue-600 hover:to-purple-600 transition">
                     Modifier
                     </button>
-                    <button className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-6 py-2 rounded-lg font-semibold shadow hover:from-red-600 hover:to-pink-600 transition">
-                    Supprimer
+                    <button
+                        className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-6 py-2 rounded-lg font-semibold shadow hover:from-red-600 hover:to-pink-600 transition"
+                        onClick={async () => {
+                            if (confirm("Voulez-vous vraiment supprimer cet événement ?")) {
+                                try {
+                                    deleteEvent(event,currentUserId)
+                                    window.location.href = "/";
+                                } catch (e) {
+                                    alert("Erreur lors de la suppression.");
+                                }
+                            }
+                        }}
+                    >
+                        Supprimer
                     </button>
                     <button
                         className="bg-gradient-to-r from-green-500 to-teal-500 text-white px-6 py-2 rounded-lg font-semibold shadow cursor-pointer hover:from-green-600 hover:to-teal-600 transition"

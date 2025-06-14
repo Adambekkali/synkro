@@ -41,4 +41,15 @@ export class EvenementsController {
         throw new Error('Invalid ID format. ID must be a number.');
         }
     return this.evenementsService.getEventsByOrganizer(idNumber);
-}  }
+}  
+  @Post(':id/delete')
+  delete(@Param('id') id: String) {
+    const idNumber = Number(id);
+    if (isNaN(idNumber)) {
+        throw new Error('Invalid ID format. ID must be a number.');
+        }
+    return this.evenementsService.delete(idNumber);
+  }
+
+
+}

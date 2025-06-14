@@ -147,6 +147,28 @@ export async function createEvent(event) {
       console.error(error);
       return null;
     }
+  }
+
+export async function deleteEvent(event, userId) {
+  try {
+    if (event.proprietaire_id !== userId) {
+      throw new Error("Vous n'êtes pas autorisé à supprimer cet événement");
+    }
+    const response = await fetch(`${API_URL}/evenements/${event.id}/delete`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ userId }), // Pass the userId in the request body
+    });
+    if (!response.ok) {
+      throw new Error(`Erreur lors de la suppression de l'événement avec ID ${eventId}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
 }
 
 

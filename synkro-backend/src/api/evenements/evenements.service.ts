@@ -50,6 +50,12 @@ export class EvenementsService {
           where: { proprietaire_id: id }, 
         });
       }
+
+      delete(id: number) {
+        return this.prisma.evenements.delete({
+          where: { id },
+        });
+      }
       
     }
 
