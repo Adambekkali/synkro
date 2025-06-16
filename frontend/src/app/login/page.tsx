@@ -4,9 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { UserRole } from '@/app/types';
-import '@/app/globals.css';
 
-// Interfaces locales pour éviter les erreurs d'import
+// Interfaces locales
 interface RegisterData {
   email: string;
   mot_de_passe: string;
@@ -47,14 +46,72 @@ export default function LoginPage() {
     
     try {
       const loginData: LoginData = { email, password };
+      console.log('=== DÉBUT DEBUG CONNEXION ===');
+      console.log('Données envoyées:', loginData);
       
       const res = await axios.post('http://localhost:3000/auth/login', loginData);
 
+      console.log('=== RÉPONSE SERVEUR ===');
+      console.log('Status:', res.status);
+      console.log('Données complètes:', res.data);
+      console.log('Token reçu:', res.data.access_token);
+
+      // Stocker le token
       localStorage.setItem('token', res.data.access_token);
+      console.log('Token stocké dans localStorage');
+
+      // Décoder le token pour vérifier son contenu
+      try {
+        const tokenParts = res.data.access_token.split('.');
+        console.log('Parties du token:', tokenParts.length);
+        
+        if (tokenParts.length === 3) {
+          const payload = JSON.parse(Buffer.from(tokenParts[1], 'base64').toString('utf-8'));
+          console.log('=== PAYLOAD DU TOKEN ===');
+          console.log('Payload complet:', payload);
+          console.log('ID utilisateur:', payload.id);
+          console.log('Email:', payload.username);
+          console.log('Rôle:', payload.role);
+          console.log('Organisation:', payload.organization);
+          console.log('Expiration:', new Date(payload.exp * 1000));
+          
+          // Vérifier si le rôle est correct
+          if (payload.role && Object.values(UserRole).includes(payload.role)) {
+            console.log('✅ Rôle valide:', payload.role);
+          } else {
+            console.error('❌ Rôle invalide ou manquant:', payload.role);
+          }
+        }
+      } catch (decodeError) {
+        console.error('❌ Erreur décodage token:', decodeError);
+      }
+
+      console.log('=== TENTATIVE DE REDIRECTION ===');
+      console.log('Avant redirection - Token présent:', !!localStorage.getItem('token'));
       
-      // Redirection vers l'accueil
+      // Essayer plusieurs méthodes de redirection
+      console.log('Méthode 1: router.push()');
       router.push('/');
+      
+      // Backup après un délai
+      setTimeout(() => {
+        console.log('Méthode 2: window.location (backup)');
+        window.location.href = '/';
+      }, 1000);
+
+      // Backup immédiat si router.push ne fonctionne pas
+      setTimeout(() => {
+        if (window.location.pathname === '/login') {
+          console.log('Méthode 3: window.location (forcé)');
+          window.location.replace('/');
+        }
+      }, 2000);
+      
     } catch (err: any) {
+      console.error('=== ERREUR CONNEXION ===');
+      console.error('Erreur complète:', err);
+      console.error('Response:', err.response);
+      
       if (err.response?.status === 401) {
         setError('Email ou mot de passe incorrect');
       } else if (err.response?.data?.message) {
@@ -62,7 +119,6 @@ export default function LoginPage() {
       } else {
         setError('Erreur de connexion. Vérifiez que le serveur est démarré.');
       }
-      console.error('Erreur de connexion:', err);
     } finally {
       setIsLoading(false);
     }
@@ -100,11 +156,12 @@ export default function LoginPage() {
         organization: role === UserRole.ORGANIZER ? organization.trim() : undefined
       };
 
+      console.log('=== DEBUG INSCRIPTION ===');
       console.log('Données d\'inscription envoyées:', { ...registerData, mot_de_passe: '***' });
 
       const res = await axios.post('http://localhost:3000/utilisateurs', registerData);
       
-      console.log('Réponse du serveur:', res.data);
+      console.log('Réponse inscription:', res.data);
       
       if (role === UserRole.ORGANIZER) {
         alert('✅ Inscription réussie ! Votre compte organisateur doit être approuvé par un administrateur avant de pouvoir créer des événements.');
@@ -127,7 +184,8 @@ export default function LoginPage() {
       }, 1000);
       
     } catch (err: any) {
-      console.error('Erreur d\'inscription:', err);
+      console.error('=== ERREUR INSCRIPTION ===');
+      console.error('Erreur complète:', err);
       
       if (err.response?.data?.message) {
         setError(err.response.data.message);
@@ -196,6 +254,11 @@ export default function LoginPage() {
               Inscription
             </button>
           </div>
+        </div>
+
+        {/* Debug info - à supprimer plus tard */}
+        <div className="mb-4 p-2 bg-gray-100 rounded text-xs">
+          <strong>Debug:</strong> Regardez la console (F12) pour les logs détaillés
         </div>
 
         {/* Message d'erreur */}

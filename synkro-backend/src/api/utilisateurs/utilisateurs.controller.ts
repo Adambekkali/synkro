@@ -29,7 +29,17 @@ export class UtilisateursController {
   }
 
   @Post()
-  create(@Body() { email, mot_de_passe, nom, prenom }: { email: string; mot_de_passe: string; nom?: string; prenom?: string }) {
-    return this.utilisateursService.create(email, mot_de_passe, nom, prenom);
+  create(@Body() { email, mot_de_passe, nom, prenom, role, organization }: { 
+    email: string; 
+    mot_de_passe: string; 
+    nom?: string; 
+    prenom?: string;
+    role?: string;           // ← NOUVEAU
+    organization?: string;   // ← NOUVEAU
+  }) {
+    console.log('=== DEBUG CONTROLLER INSCRIPTION ===');
+    console.log('Données reçues:', { email, mot_de_passe: '***', nom, prenom, role, organization });
+    
+    return this.utilisateursService.create(email, mot_de_passe, nom, prenom, role, organization);
   }
 }

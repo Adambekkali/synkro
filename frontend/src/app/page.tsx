@@ -1,450 +1,406 @@
 "use client";
 import { useEffect, useState } from "react";
-import { createEvent, getEventsByOrganizer, getInscriptionsByUser, getInvitationsByUser } from "@/api"; // Remplace par ton import correct
-import { Calendar, MapPin, Clock, Tag } from 'lucide-react';
-import { Event, Invitation, Inscription } from "./types"; 
+import { Calendar, MapPin, Clock, Tag, Users, CheckCircle } from 'lucide-react';
+import { Event } from "./types";
+import { useRole } from "@/hooks/useRole";
+import { 
+  getAllPublicEvents, 
+  inscribeToEvent, 
+  checkUserSubscription, 
+  unsubscribeFromEvent 
+} from "@/api";
 
-export default function MyEvents() {
-  const [myEvents, setMyEvents] = useState<Event[]>([]);
-  const [myInvitations, setMyInvitations] = useState<Invitation[]>([]);
-  const [myInscriptions, setMyInscriptions] = useState<Inscription[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [activeTab, setActiveTab] = useState('organized');
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [newEvent, setNewEvent] = useState<Event>({
-    id: 0,
-    titre: '',
-    date_debut: '',
-    date_fin: '',
-    date_creation: '',
-    lieu: '',
-    evenement_categorie: '',
-    max_participants: 0,
-    nb_participants: 0,
-    proprietaire_id: 0,
-    description: '',
-    est_prive: false
-  });
-  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+interface EventWithSubscription extends Event {
+  isUserSubscribed?: boolean;
+}
+
+export default function HomePage() {
+  const [events, setEvents] = useState<EventWithSubscription[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [loadingSubscriptions, setLoadingSubscriptions] = useState<{[key: number]: boolean}>({});
+  const { user, isCitizen, isOrganizer, isAdmin } = useRole();
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      const parsedToken = JSON.parse(
-        Buffer.from(token.split(".")[1], "base64").toString("utf-8")
-      );
-      setCurrentUserId(parsedToken?.id || null);
-    }
-  }, []);
-
-  // Fonction pour créer un événement
-  const handleCreateEvent = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!currentUserId) {
-      alert("Utilisateur non authentifié");
-      return;
-    }
-    
-    // Convertir les dates au format ISO-8601 si elles existent
-    const eventToCreate = {
-      ...newEvent,
-      date_debut: newEvent.date_debut ? new Date(newEvent.date_debut).toISOString() : undefined,
-      date_fin: (newEvent as any).date_fin ? new Date((newEvent as any).date_fin).toISOString() : undefined,
-      date_limite_inscription: (newEvent as any).date_limite_inscription
-        ? new Date((newEvent as any).date_limite_inscription).toISOString()
-        : undefined,
-      proprietaire_id: currentUserId,
+    const fetchEvents = async () => {
+      try {
+        const publicEvents = await getAllPublicEvents();
+        setEvents(publicEvents);
+        
+        // Vérifier les inscriptions de l'utilisateur connecté
+        if (user && isCitizen) {
+          await checkUserSubscriptions(publicEvents);
+        }
+      } catch (error) {
+        console.error("Erreur lors de la récupération des événements:", error);
+      } finally {
+        setLoading(false);
+      }
     };
 
+    fetchEvents();
+  }, [user, isCitizen]);
+
+  const checkUserSubscriptions = async (eventsList: Event[]) => {
+    if (!user) return;
+    
     try {
-      await createEvent(eventToCreate);
-      setShowCreateModal(false);
-      // Recharger les événements après création
-      const events = await getEventsByOrganizer(currentUserId);
-      setMyEvents(events);
-      // Réinitialiser le formulaire
-      setNewEvent({
-        id: 0,
-        titre: '',
-        date_debut: '',
-        date_fin: '',
-        date_creation: '',
-        lieu: '',
-        evenement_categorie: '',
-        max_participants: 0,
-        nb_participants: 0,
-        proprietaire_id: 0,
-        description: '',
-        est_prive: false
-      });
+      const eventsWithSubscription = await Promise.all(
+        eventsList.map(async (event) => {
+          try {
+            const isSubscribed = await checkUserSubscription(event.id, user.id);
+            return { ...event, isUserSubscribed: isSubscribed };
+          } catch (error) {
+            console.error(`Erreur vérification inscription événement ${event.id}:`, error);
+            return { ...event, isUserSubscribed: false };
+          }
+        })
+      );
+      setEvents(eventsWithSubscription);
     } catch (error) {
-      console.error("Erreur lors de la création de l'événement:", error);
-      alert("Erreur lors de la création de l'événement");
+      console.error("Erreur lors de la vérification des inscriptions:", error);
     }
   };
 
-  useEffect(() => {
-    const fetchUserData = async () => {
-      const token = localStorage.getItem("token");
-      if (token) {
-        const parsedToken = JSON.parse(
-          Buffer.from(token.split(".")[1], "base64").toString("utf-8")
+  // Filtrage des événements
+  const filteredEvents = events.filter(event => {
+    const matchesSearch = event.titre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         event.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         event.lieu?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesCategory = selectedCategory === "all" || event.categorie === selectedCategory;
+    
+    // Seulement les événements futurs et non annulés
+    const isFuture = new Date(event.date_debut) > new Date();
+    const isNotCanceled = !event.est_annule;
+    
+    return matchesSearch && matchesCategory && isFuture && isNotCanceled;
+  });
+
+  const handleInscription = async (event: EventWithSubscription) => {
+    if (!user) {
+      alert("Vous devez être connecté pour vous inscrire");
+      window.location.href = "/auth";
+      return;
+    }
+
+    if (!isCitizen) {
+      alert("Seuls les citoyens peuvent s'inscrire aux événements");
+      return;
+    }
+
+    // Vérifier si l'événement est complet
+    if (event.max_participants && (event.nb_participants || 0) >= event.max_participants) {
+      alert("Cet événement est complet");
+      return;
+    }
+
+    // Vérifier la date limite d'inscription
+    if (event.date_limite_inscription && new Date(event.date_limite_inscription) < new Date()) {
+      alert("La date limite d'inscription est dépassée");
+      return;
+    }
+
+    setLoadingSubscriptions(prev => ({ ...prev, [event.id]: true }));
+
+    try {
+      if (event.isUserSubscribed) {
+        // Désinscription
+        await unsubscribeFromEvent(event.id, user.id);
+        
+        // Mettre à jour l'état local
+        setEvents(prevEvents => 
+          prevEvents.map(e => 
+            e.id === event.id 
+              ? { 
+                  ...e, 
+                  isUserSubscribed: false,
+                  nb_participants: Math.max(0, (e.nb_participants || 0) - 1)
+                }
+              : e
+          )
         );
-        console.log("Parsed Token:", parsedToken);
-        const userId = parsedToken?.id;
-        const email = parsedToken?.username;
-
-        if (userId) {
-          try {
-            const events = await getEventsByOrganizer(userId);
-            const invitations = await getInvitationsByUser(email); 
-            const inscriptions = await getInscriptionsByUser(userId); 
-            console.log("invitations", invitations);
-            console.log("inscriptions", inscriptions);
-            console.log("events", events);
-            setMyEvents(events);
-            setMyInvitations(invitations); 
-            setMyInscriptions(inscriptions);
-          } catch (error) {
-            console.error("Error fetching user data:", error);
-          }
-        }
+        
+        alert("Désinscription réussie !");
+      } else {
+        // Inscription
+        await inscribeToEvent(event.id, user.id);
+        
+        // Mettre à jour l'état local
+        setEvents(prevEvents => 
+          prevEvents.map(e => 
+            e.id === event.id 
+              ? { 
+                  ...e, 
+                  isUserSubscribed: true,
+                  nb_participants: (e.nb_participants || 0) + 1
+                }
+              : e
+          )
+        );
+        
+        alert("Inscription réussie !");
       }
-      setLoading(false); 
-    };
+    } catch (error: any) {
+      console.error("Erreur lors de l'inscription/désinscription:", error);
+      alert(error.message || "Erreur lors de l'opération");
+    } finally {
+      setLoadingSubscriptions(prev => ({ ...prev, [event.id]: false }));
+    }
+  };
 
-    fetchUserData();
-  }, []);
+  const getSubscriptionButtonText = (event: EventWithSubscription) => {
+    if (loadingSubscriptions[event.id]) {
+      return "...";
+    }
+    
+    if (event.isUserSubscribed) {
+      return "Se désinscrire";
+    }
+    
+    if (event.max_participants && (event.nb_participants || 0) >= event.max_participants) {
+      return "Complet";
+    }
+    
+    return "S'inscrire";
+  };
+
+  const getSubscriptionButtonStyle = (event: EventWithSubscription) => {
+    if (loadingSubscriptions[event.id]) {
+      return "bg-gray-400 text-white cursor-not-allowed";
+    }
+    
+    if (event.isUserSubscribed) {
+      return "bg-red-600 text-white hover:bg-red-700";
+    }
+    
+    if (event.max_participants && (event.nb_participants || 0) >= event.max_participants) {
+      return "bg-gray-300 text-gray-500 cursor-not-allowed";
+    }
+    
+    return "bg-blue-600 text-white hover:bg-blue-700";
+  };
+
+  const isSubscriptionDisabled = (event: EventWithSubscription): boolean => {
+    return Boolean(
+      loadingSubscriptions[event.id] || 
+      (!event.isUserSubscribed && event.max_participants && (event.nb_participants || 0) >= event.max_participants)
+    );
+  };
 
   if (loading) {
-    return <h2>Loading ...</h2>;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Chargement des événements...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-6 bg-gray-50 rounded-lg shadow-sm">
-      <h1 className="text-3xl font-bold mb-8 text-center text-blue-800">
-        Mon Espace Événements
-      </h1>
-      
-      {/* Navigation Tabs */}
-      <div className="flex mb-6 border-b">
-        <button 
-          className={`px-4 py-2 font-medium ${activeTab === 'organized' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600'}`}
-          onClick={() => setActiveTab('organized')}
-        >
-          Mes Événements Organisés
-        </button>
-        <button 
-          className={`px-4 py-2 font-medium ${activeTab === 'invitations' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600'}`}
-          onClick={() => setActiveTab('invitations')}
-        >
-          Mes Invitations
-        </button>
-        <button 
-          className={`px-4 py-2 font-medium ${activeTab === 'registrations' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600'}`}
-          onClick={() => setActiveTab('registrations')}
-        >
-          Mes Inscriptions
-        </button>
+    <div className="min-h-screen bg-gray-50">
+      {/* Hero Section */}
+      <div className="bg-gradient-to-r from-blue-600 to-purple-700 text-white py-16">
+        <div className="max-w-6xl mx-auto px-6 text-center">
+          <h1 className="text-4xl font-bold mb-4">
+            Découvrez les événements de votre ville
+          </h1>
+          <p className="text-xl mb-8 text-blue-100">
+            Participez aux activités organisées par votre mairie et les associations locales
+          </p>
+          
+          {/* Barre de recherche */}
+          <div className="max-w-2xl mx-auto flex gap-4">
+            <input
+              type="text"
+              placeholder="Rechercher un événement..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="flex-1 px-4 py-3 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300"
+            />
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="px-4 py-3 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300"
+            >
+              <option value="all">Toutes catégories</option>
+              <option value="Social">Social</option>
+              <option value="Sport">Sport</option>
+              <option value="Formation">Formation</option>
+              <option value="Conference">Conférence</option>
+              <option value="Virtuel">Virtuel</option>
+              <option value="Fete">Fête</option>
+            </select>
+          </div>
+        </div>
       </div>
-      
-      {/* Organized Events */}
-      {activeTab === 'organized' && (
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">Événements que j&apos;organise</h2>
-          
-          {myEvents?.length > 0 ? (
-            <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-              {myEvents.map((event, index) => (
-                <div key={index} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-                  <div className="h-24 bg-gradient-to-r from-blue-500 to-purple-600"></div>
-                  <div className="p-4">
-                    <h3 className="text-lg font-bold text-gray-800 mb-2">{event.titre}</h3>
-                    
-                    <div className="flex items-center text-gray-600 mb-2">
-                      <Calendar size={16} className="mr-2 text-blue-500" />
-                      <span>{new Date(event.date_debut).toLocaleDateString()}</span>
-                    </div>
-                    
-                    <div className="flex items-center text-gray-600 mb-2">
-                      <Clock size={16} className="mr-2 text-blue-500" />
-                      <span>{new Date(event.date_debut).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                    </div>
-                    
-                    <div className="flex items-center text-gray-600 mb-3">
-                      <MapPin size={16} className="mr-2 text-blue-500" />
-                      <span>{event.lieu}</span>
-                    </div>
-                    
-                    <div className="flex justify-between items-center mt-4">
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        <Tag size={12} className="mr-1" />
-                        {event.evenement_categorie || 'Social'}
-                      </span>
-                      
-                      <button 
-                        className="text-sm font-medium text-blue-600 hover:text-blue-800 cursor-pointer"
-                        onClick={() => window.location.href = `about-event/${event.id}`}
-                      >
-                        Détails →
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-              
-              <div className="bg-white p-8 text-center rounded-lg border border-gray-200">
-                <div className="text-gray-500 mb-4">Ou créer un événement</div>
-                <button
-                  className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
-                  onClick={() => setShowCreateModal(true)}
-                >
-                  Créer un événement
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="bg-white p-8 text-center rounded-lg border border-gray-200">
-              <div className="text-gray-500 mb-4">Vous n&apos;avez pas encore créé d&apos;événement</div>
-              <button
-                className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
-                onClick={() => setShowCreateModal(true)}
-              >
-                Créer un événement
-              </button>
-            </div>
-          )}
 
-          {/* Modal de création d'événement */}
-          {showCreateModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-              <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md relative max-h-[90vh] overflow-y-auto">
-                <button
-                  className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
-                  onClick={() => setShowCreateModal(false)}
+      {/* Actions rapides selon le rôle */}
+      {user && (
+        <div className="max-w-6xl mx-auto px-6 py-6">
+          <div className="bg-white rounded-lg shadow-sm p-4 flex justify-between items-center">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-800">
+                {isCitizen && "Mes actions"}
+                {isOrganizer && "Actions organisateur"}
+                {isAdmin && "Actions administrateur"}
+              </h2>
+            </div>
+            <div className="flex gap-3">
+              {isCitizen && (
+                <a
+                  href="/my-inscriptions"
+                  className="px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors"
                 >
-                  ×
-                </button>
-                <h2 className="text-xl font-bold mb-4">Créer un événement</h2>
-                <form onSubmit={handleCreateEvent} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Titre</label>
-                    <input
-                      type="text"
-                      className="w-full border rounded px-3 py-2"
-                      value={newEvent.titre}
-                      onChange={e => setNewEvent({ ...newEvent, titre: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Description</label>
-                    <textarea
-                      className="w-full border rounded px-3 py-2"
-                      value={(newEvent as any).description || ""}
-                      onChange={e => setNewEvent({ ...newEvent, description: e.target.value } as any)}
-                      rows={3}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Lieu</label>
-                    <input
-                      type="text"
-                      className="w-full border rounded px-3 py-2"
-                      value={newEvent.lieu}
-                      onChange={e => setNewEvent({ ...newEvent, lieu: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="flex gap-4">
-                    <div className="flex-1">
-                      <label className="block text-sm font-medium mb-1">Date de début</label>
-                      <input
-                        type="datetime-local"
-                        className="w-full border rounded px-3 py-2"
-                        value={newEvent.date_debut}
-                        onChange={e => setNewEvent({ ...newEvent, date_debut: e.target.value })}
-                        required
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <label className="block text-sm font-medium mb-1">Date de fin</label>
-                      <input
-                        type="datetime-local"
-                        className="w-full border rounded px-3 py-2"
-                        value={(newEvent as any).date_fin || ""}
-                        onChange={e => setNewEvent({ ...newEvent, date_fin: e.target.value } as any)}
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Nombre max. de participants</label>
-                    <input
-                      type="number"
-                      className="w-full border rounded px-3 py-2"
-                      value={(newEvent as any).max_participants || ""}
-                      onChange={e => setNewEvent({ ...newEvent, max_participants: e.target.value ? parseInt(e.target.value) : undefined } as any)}
-                      min={1}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Date limite d'inscription</label>
-                    <input
-                      type="datetime-local"
-                      className="w-full border rounded px-3 py-2"
-                      value={(newEvent as any).date_limite_inscription || ""}
-                      onChange={e => setNewEvent({ ...newEvent, date_limite_inscription: e.target.value } as any)}
-                    />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="est_prive"
-                      checked={(newEvent as any).est_prive || false}
-                      onChange={e => setNewEvent({ ...newEvent, est_prive: e.target.checked } as any)}
-                    />
-                    <label htmlFor="est_prive" className="text-sm font-medium">Événement privé</label>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Catégorie</label>
-                    <select
-                      className="w-full border rounded px-3 py-2"
-                      value={newEvent.evenement_categorie || "Social"}
-                      onChange={e => setNewEvent({ ...newEvent, evenement_categorie: e.target.value })}
-                    >
-                      <option value="Conférence">Conférence</option>
-                      <option value="Formation">Formation</option>
-                      <option value="Social">Social</option>
-                      <option value="Sport">Sport</option>
-                      <option value="Virtuel">Virtuel</option>
-                      <option value="Fête">Fête</option>
-                    </select>
-                  </div>
-                  <div className="flex justify-end">
-                    <button
-                      type="button"
-                      className="mr-2 px-4 py-2 rounded bg-gray-200 text-gray-700"
-                      onClick={() => setShowCreateModal(false)}
-                    >
-                      Annuler
-                    </button>
-                    <button
-                      type="submit"
-                      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                    >
-                      Créer
-                    </button>
-                  </div>
-                </form>
-              </div>
+                  Mes inscriptions
+                </a>
+              )}
+              {(isOrganizer || isAdmin) && (
+                <>
+                  <a
+                    href="/organizer"
+                    className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
+                  >
+                    Créer un événement
+                  </a>
+                  <a
+                    href="/organizer"
+                    className="px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors"
+                  >
+                    Mes événements
+                  </a>
+                </>
+              )}
             </div>
-          )}
+          </div>
         </div>
       )}
-      
-      {/* Invitations */}
-      {activeTab === 'invitations' && (
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">Mes Invitations</h2>
-          {myInvitations?.length > 0 ? (
-            <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-              {myInvitations.map((invitation, index) => (
-                <div key={index} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-                  <div className="h-24 bg-gradient-to-r from-blue-500 to-purple-600"></div>
-                  <div className="p-4">
-                    <h3 className="text-lg font-bold text-gray-800 mb-2">{invitation.evenements.titre}</h3>
-                    
-                    <div className="flex items-center text-gray-600 mb-2">
-                      <Calendar size={16} className="mr-2 text-blue-500" />
-                      <span>{new Date(invitation.evenements.date_debut).toLocaleDateString()}</span>
-                    </div>
-                    
-                    <div className="flex items-center text-gray-600 mb-2">
-                      <Clock size={16} className="mr-2 text-blue-500" />
-                      <span>{new Date(invitation.evenements.date_debut).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                    </div>
-                    
-                    <div className="flex items-center text-gray-600 mb-3">
-                      <MapPin size={16} className="mr-2 text-blue-500" />
-                      <span>{invitation.evenements.lieu}</span>
-                    </div>
-                    
-                    <div className="flex justify-between items-center mt-4">
-                      <button className="px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors">
-                        Accepter
-                      </button>
-                      <button className="px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors">
-                        Refuser
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="bg-white p-8 text-center rounded-lg border border-gray-200">
-              <div className="text-gray-500">Vous n&apos;avez reçu aucune invitation</div>
-            </div>
-          )}
-        </div>
-      )}
-          
-      {/* Registrations */}
-      {activeTab === 'registrations' && (
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">Mes Inscriptions</h2>
-          {myInscriptions?.length > 0 ? (
-            <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-              {myInscriptions.map((inscription, index) => (
-                <div key={index} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-                  <div className="h-24 bg-gradient-to-r from-blue-500 to-purple-600"></div>
-                  <div className="p-4">
-                    <h3 className="text-lg font-bold text-gray-800 mb-2">{inscription.evenements.titre}</h3>
-                    
-                    <div className="flex items-center text-gray-600 mb-2">
-                      <Calendar size={16} className="mr-2 text-blue-500" />
-                      <span>{new Date(inscription.evenements.date_debut).toLocaleDateString()}</span>
-                    </div>
-                    
-                    <div className="flex items-center text-gray-600 mb-2">
-                      <Clock size={16} className="mr-2 text-blue-500" />
-                      <span>{new Date(inscription.evenements.date_debut).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                    </div>
-                    
-                    <div className="flex items-center text-gray-600 mb-3">
-                      <MapPin size={16} className="mr-2 text-blue-500" />
-                      <span>{inscription.evenements.lieu}</span>
-                    </div>
 
-                    <div className="flex items-center mb-3">
-                      <span
-                        className={`px-4 py-2 rounded-full text-sm font-bold ${
-                          inscription.statut === "Confirmée"
-                          ? "bg-green-200 text-green-900 border border-green-800"
-                          : inscription.statut === "en attente"
-                          ? "bg-yellow-200 text-yellow-900 border border-yellow-800"
-                          : "bg-red-200 text-red-900 border border-red-800"
-                        }`}
-                      >
-                        {inscription.statut.toUpperCase()}
-                      </span>
+      {/* Liste des événements */}
+      <div className="max-w-6xl mx-auto px-6 pb-12">
+        <div className="flex justify-between items-center mb-8">
+          <h2 className="text-2xl font-bold text-gray-800">
+            Événements à venir ({filteredEvents.length})
+          </h2>
+        </div>
+
+        {filteredEvents.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="text-gray-400 mb-4">
+              <Calendar size={64} className="mx-auto" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-600 mb-2">
+              Aucun événement trouvé
+            </h3>
+            <p className="text-gray-500">
+              {searchTerm ? "Essayez de modifier votre recherche" : "Aucun événement prévu pour le moment"}
+            </p>
+          </div>
+        ) : (
+          <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+            {filteredEvents.map((event) => (
+              <div key={event.id} className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
+                {/* Image d'en-tête colorée */}
+                <div className="h-32 bg-gradient-to-r from-blue-500 to-purple-600 relative">
+                  <div className="absolute top-4 right-4">
+                    <span className="bg-white bg-opacity-90 text-gray-800 px-3 py-1 rounded-full text-sm font-medium">
+                      {event.categorie}
+                    </span>
+                  </div>
+                  {isCitizen && event.isUserSubscribed && (
+                    <div className="absolute top-4 left-4">
+                      <div className="bg-green-500 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+                        <CheckCircle size={12} />
+                        Inscrit
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-6">
+                  {/* Titre */}
+                  <h3 className="text-xl font-bold text-gray-800 mb-2">
+                    {event.titre}
+                  </h3>
+                  
+                  <p className="text-gray-600 mb-4 line-clamp-2">
+                    {event.description}
+                  </p>
+
+                  {/* Informations pratiques */}
+                  <div className="space-y-2 mb-4">
+                    <div className="flex items-center text-gray-600">
+                      <Calendar size={16} className="mr-2 text-blue-500" />
+                      <span>{new Date(event.date_debut).toLocaleDateString('fr-FR', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}</span>
                     </div>
                     
-                    <button className="text-sm font-medium text-blue-600 hover:text-blue-800">
-                      Voir les détails
+                    <div className="flex items-center text-gray-600">
+                      <Clock size={16} className="mr-2 text-blue-500" />
+                      <span>{new Date(event.date_debut).toLocaleTimeString('fr-FR', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}</span>
+                    </div>
+                    
+                    {event.lieu && (
+                      <div className="flex items-center text-gray-600">
+                        <MapPin size={16} className="mr-2 text-blue-500" />
+                        <span>{event.lieu}</span>
+                      </div>
+                    )}
+
+                    {event.max_participants && (
+                      <div className="flex items-center text-gray-600">
+                        <Users size={16} className="mr-2 text-blue-500" />
+                        <span>
+                          {event.nb_participants || 0}/{event.max_participants} participants
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => window.location.href = `/about-event/${event.id}`}
+                      className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      Voir détails
                     </button>
+                    
+                    {isCitizen && (
+                      <button
+                        onClick={() => handleInscription(event)}
+                        disabled={isSubscriptionDisabled(event)}
+                        className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${getSubscriptionButtonStyle(event)}`}
+                      >
+                        {getSubscriptionButtonText(event)}
+                      </button>
+                    )}
+                    
+                    {!user && (
+                      <button
+                        onClick={() => window.location.href = "/auth"}
+                        className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        Se connecter
+                      </button>
+                    )}
                   </div>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="bg-white p-8 text-center rounded-lg border border-gray-200">
-              <div className="text-gray-500">Vous n&apos;êtes inscrit à aucun événement</div>
-            </div>
-          )}
-        </div>
-      )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

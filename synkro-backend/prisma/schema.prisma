@@ -52,6 +52,9 @@ model utilisateurs {
   mot_de_passe  String         @db.VarChar(255)
   nom           String?        @db.VarChar(50)
   prenom        String?        @db.VarChar(50)
+  role          user_role      @default(CITIZEN)
+  organization  String?        @db.VarChar(100)
+  is_approved   Boolean        @default(false)
   date_creation DateTime?      @default(now()) @db.Timestamp(0)
   evenements    evenements[]
   inscriptions  inscriptions[]
@@ -86,16 +89,22 @@ enum inscriptions_statut {
 }
 
 enum evenements_categorie {
-  Conf__rence @map("ConfÃ©rence")
+  Conference    @map("Conférence")
   Formation
   Social
   Sport
   Virtuel
-  F__te       @map("FÃªte")
+  Fete          @map("Fête")
 }
 
 enum invitations_statut {
   en_attente
   acceptee
   refusee
+}
+
+enum user_role {
+  CITIZEN
+  ORGANIZER
+  ADMIN
 }

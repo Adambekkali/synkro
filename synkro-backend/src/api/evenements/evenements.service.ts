@@ -57,6 +57,28 @@ export class EvenementsService {
         });
       }
       
+      async getPublicEvents() {
+        const events = await this.prisma.evenements.findMany({
+          where: {
+            est_prive: false,
+            est_annule: false,
+          },
+          include: {
+            utilisateurs: {
+              select: { id: true, prenom: true, nom: true, email: true }
+            },
+            inscriptions: true // Ajouter pour compter les participants
+          },
+          orderBy: { date_debut: 'asc' }
+        });
+      
+        // Mapper pour compatibilité frontend
+        return events.map(event => ({
+          ...event,
+          evenement_categorie: event.categorie, // Alias pour le frontend
+          nb_participants: event.inscriptions?.length || 0 // Calculer le nombre réel
+        }));
+      }
     }
 
    

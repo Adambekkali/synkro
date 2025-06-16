@@ -11,6 +11,11 @@ export class EvenementsController {
     return this.evenementsService.getAll();
   }
 
+  @Get('public')
+  getPublicEvents() {
+    return this.evenementsService.getPublicEvents();
+  }
+
   @Get(':id')
   getById(@Param('id') id: String) {
     const idNumber = Number(id);

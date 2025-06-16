@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Param } from '@nestjs/common';
 import { InscriptionsService } from './inscriptions.service';
 import { inscriptions_statut } from '@prisma/client';
 
@@ -29,11 +29,38 @@ export class InscriptionsController {
     return this.inscriptionsService.getInscriptionsByUser(idNumber);
   }
   
-
   @Post()
-  create(@Body() { evenement_id,utilisateur_id,date_inscription,statut}: { evenement_id: number; utilisateur_id: number; date_inscription: Date; statut: inscriptions_statut }) {
+  create(@Body() { evenement_id,utilisateur_id,date_inscription,statut}: { evenement_id: number; utilisateur_id: number; date_inscription?: Date; statut?: inscriptions_statut }) {
     return this.inscriptionsService.create(
-      { evenement_id, utilisateur_id, date_inscription,statut }
+      { evenement_id, utilisateur_id, date_inscription, statut }
     );
+  }
+
+  // ======= NOUVEAUX ENDPOINTS POUR LE FRONTEND =======
+
+  @Get('check/:eventId/:userId')
+  checkUserSubscription(
+    @Param('eventId') eventId: string,
+    @Param('userId') userId: string
+  ) {
+    const eventIdNumber = Number(eventId);
+    const userIdNumber = Number(userId);
+    if (isNaN(eventIdNumber) || isNaN(userIdNumber)) {
+      throw new Error('Invalid ID format. IDs must be numbers.');
+    }
+    return this.inscriptionsService.checkSubscription(eventIdNumber, userIdNumber);
+  }
+
+  @Delete(':eventId/:userId')
+  remove(
+    @Param('eventId') eventId: string,
+    @Param('userId') userId: string
+  ) {
+    const eventIdNumber = Number(eventId);
+    const userIdNumber = Number(userId);
+    if (isNaN(eventIdNumber) || isNaN(userIdNumber)) {
+      throw new Error('Invalid ID format. IDs must be numbers.');
+    }
+    return this.inscriptionsService.remove(eventIdNumber, userIdNumber);
   }
 }
